@@ -23,14 +23,14 @@ void sigchld_handler(int s) {
 }
 
 char* get_home_content() {
-  char* buffer;  
+  char* buffer; 
   long length;
   // char success[] = "HTTP/1.1 200 OK \r\n";
   // open the index html in read mode
   FILE * f = fopen("index.html", "r");
   if(f) {
     //append success msg before writing the file itself
-    
+     
     //strcat(buffer, success);
     /**
       fseek sets the file position of the stream to the given offset.
@@ -63,6 +63,12 @@ char* get_home_content() {
   return buffer;
 }
 
+struct addrinfo  set_hints() {
+    struct addrinfo hints;
+    
+   
+    return hints;
+}
 
 // get sockaddr, IPv4 or IPv6:
 void *get_in_addr(struct sockaddr *sa) {
@@ -73,16 +79,26 @@ void *get_in_addr(struct sockaddr *sa) {
     return &(((struct sockaddr_in6*)sa) -> sin6_addr);
 }
 
+void ensure_addr(struct addrinfo *a) {
+  if (a == NULL)  {
+        fprintf(stderr, "server: failed to bind\n");
+        exit(1);
+   }
+}
+// convert the http response body into a valid http request with the headers and zlib integration (todo)
+//char* msg_to_http(char* msg) {
+  
+  //}
+
 int main() {
     int sockfd, new_fd;  // listen on sock_fd, new connection on new_fd
     struct addrinfo hints, *servinfo, *p;
-    struct sockaddr_storage their_addr; // connector's address information
+    struct sockaddr_storage req_addr; // request address 
     socklen_t sin_size;
     struct sigaction sa;
     int yes=1;
     char s[INET6_ADDRSTRLEN];
     int rv;
-
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
@@ -116,16 +132,12 @@ int main() {
 
     freeaddrinfo(servinfo); // all done with this structure
 
-    if (p == NULL)  {
-        fprintf(stderr, "server: failed to bind\n");
-        exit(1);
-    }
-
+    //ensure_addr(p);
     if (listen(sockfd, BACKLOG) == -1) {
         perror("listen");
         exit(1);
     }
-
+    
     sa.sa_handler = sigchld_handler; // reap all dead processes
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_RESTART;
@@ -134,18 +146,18 @@ int main() {
         exit(1);
     }
 
-    printf("server: waiting for connections...\n");
+    printf("http server: waiting for connections on 3000...\n");
 
     while(1) {  // main accept() loop
-        sin_size = sizeof their_addr;
-        new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+        sin_size = sizeof req_addr;
+        new_fd = accept(sockfd, (struct sockaddr *)&req_addr, &sin_size);
         if (new_fd == -1) {
             perror("accept");
             continue;
         }
 
-        inet_ntop(their_addr.ss_family,
-            get_in_addr((struct sockaddr *)&their_addr),
+        inet_ntop(req_addr.ss_family,
+            get_in_addr((struct sockaddr *)&req_addr),
             s, sizeof s);
         printf("server: got connection from %s\n", s);
 	char* content = get_home_content();
