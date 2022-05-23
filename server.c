@@ -78,7 +78,10 @@ int main() {
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE; // use my IP
+    hints.ai_flags = AI_PASSIVE; // use the same address from bind() and accept()
+    // getaddrinfo is what generates our structure that uses the hints we pass into that struct above
+    // https://linux.die.net/man/3/getaddrinfo -> scroll down to struct addrinfo{} and observe how we are passing the properties into that from the method shown above
+    // SOCK_STREAM is what defines this as a tcp socket not a datagram socket
     if ((rv = getaddrinfo(NULL, PORT, &hints, &servinfo)) != 0) {
         fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(rv));
         return 1;
@@ -127,8 +130,9 @@ int main() {
 
     printf("http server: waiting for connections on 3000...\n");
 
-    while(1) {  // main accept() loop
+    while(1) {
         sin_size = sizeof req_addr;
+        // so this is where AI_PASSIVE comes into play
         new_fd = accept(sockfd, (struct sockaddr *)&req_addr, &sin_size);
         if (new_fd == -1) {
             perror("accept");
