@@ -142,11 +142,6 @@ int main() {
 	    char* content = get_home_content();
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
-
-            char http200[19] = "HTTP/1.1 200 OK\r\n";
-            // if(send(new_fd, http200, 19, 0) == -1) {
-            //     perror("appending 200 hdr");
-            // }
             if (send(new_fd, content, fsize, MSG_CONFIRM) == -1)
                     perror("send");
                 close(new_fd);
