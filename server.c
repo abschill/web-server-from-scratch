@@ -132,28 +132,28 @@ int main() {
 
     while(1) {
         sin_size = sizeof req_addr;
-        // so this is where AI_PASSIVE comes into play
+        // await connection on sock fd
         new_fd = accept(sockfd, (struct sockaddr *)&req_addr, &sin_size);
         if (new_fd == -1) {
             perror("accept");
             continue;
         }
 
-        inet_ntop(req_addr.ss_family,
-            get_in_addr((struct sockaddr *)&req_addr),
-            s, sizeof s);
+        // convert ip address from binary to text format from <arpa/inet.h>
+        // it is then copied to the buffer point s we defined earlier
+        inet_ntop(req_addr.ss_family, get_in_addr((struct sockaddr *)&req_addr), s, sizeof s);
         printf("server: got connection from %s\n", s);
-	    char* content = get_home_content();
-        if (!fork()) { // this is the child process
-            close(sockfd); // child doesn't need the listener
+	    char* content = get_home_content(); // get our html with headers
+        if (!fork()) {
+            close(sockfd);
+            // send our content into the socket witha confirm flag, and handle any error it may throw
             if (send(new_fd, content, fsize, MSG_CONFIRM) == -1)
-                    perror("send");
-                close(new_fd);
-                exit(0);
+                    perror("error sending tcp socket msg");
+                close(new_fd); //close fd if fail
+                exit(0);// close if fail
         }
         free(content);
-        close(new_fd);  // close after
-	//free(content);
+        close(new_fd);  
     }
 
     return 0;
